@@ -1,0 +1,109 @@
+---
+title: "HW2"
+author: "Ian Cooper"
+date: "11/6/2021"
+output: 
+  html_document: 
+    code_folding: hide
+    toc: true
+    toc_float: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Loading the Data
+```{r}
+library(nycflights13)
+nycflights <- nycflights13::flights
+nyctemps <- nycflights13::weather
+library(ggplot2)
+```
+
+# Data Cleaning
+```{r}
+nycflights$flight <- as.factor(nycflights$flight)
+nycflights$origin <- as.factor(nycflights$origin)
+nycflights$dest <- as.factor(nycflights$dest)
+nycflights$tailnum <- as.factor(nycflights$tailnum)
+nycflights$carrier <- as.factor(nycflights$carrier)
+nycflights$date <- as.Date(nycflights$time_hour,"%Y-%m-%d %H:%M:%S")
+
+nyctemps$date <- as.Date(nyctemps$time_hour,"%Y-%m-%d %H:%M:%S")
+nyctemps$origin <- as.factor(nyctemps$origin)
+```
+
+# Structure of the Data
+```{r}
+str(nycflights)
+str(nyctemps)
+summary(nycflights)
+```
+
+
+# Scatter Plot
+
+```{r}
+DepArrPlot <- ggplot(data = nycflights, aes(x = nycflights$dep_delay, y = nycflights$arr_delay))
+DepArrPlot + geom_jitter()
+
+```
+
+# Interpretation
+The main insight I'm gleaning from this chart is that there is a larger variation in arrival delays relative to a flight's departure delay when the departure delay is small. For example, as the X-axis (departure delays) gets closer to zero, you can see a larger y-axis variation of arrival delay values. This tells me that because these departure delays are in the < 1 hour range, many flights can still make up that time in the air since it is so small. Likewise, many flights in this range have large arrival delays than departure delays, perhaps this is because an arrival delay can throw off the destination airport's landing schedule and cause an even larger delay when landing. However, as the departure delays increase to many hours, the corresponding arrival delays are virtually one-to-one. Any air gain or additional delay from landing schedule issues is likely minute compared to the magnitude of the initial departure delay.
+
+# Line Chart
+```{r}
+ewr01 <- nyctemps[nyctemps$month == 1 & nyctemps$origin == "EWR",]
+ggplot(data = ewr01, aes(x = time_hour, y = temp)) + geom_line(color = "Navy")
+
+```
+
+# Interpretation
+This line chart is about what I expected. Because it is an hourly temperature chart at EWR, there are fairly significant fluctuations in the temperature values day to day. This is because it is showing temperature from 12:00AM to 11:59PM, so night time temperatures will usually be significantly lower than during the middle part of the day. It is interesting though that the temperature got into the 60s for a day or two later in the month of January.
+
+# Histograms
+```{r}
+ewr2013 <- nyctemps[nyctemps$origin == "EWR",]
+EWR2013Hist <- ggplot(data = ewr2013, aes(temp))
+EWR2013Hist + geom_histogram(bins = 50, binwidth = 0.4, color = "Yellow", fill = "Blue", size = 0.1)
+```
+
+# Interpretation
+This is to be expected for an airport in New Jersey, which has a mild climate. Clearly, the distribution of temperatures is centered in the middle, with not many values observed at the extremes of the distribution, such as sub-zero temperatures or temperatures above 100 degrees. You can see that the distribution is not perfectly centered around the middle, but rather shifted more towards zero, obviously due to the fact that NJ experiences much lower temperatures in the Winter than it does in the Summer.
+
+# Box Plot
+
+```{r}
+ewr2013$month <- as.factor(ewr2013$month)
+ggplot(data = ewr2013, aes(x = month, y = temp)) + geom_boxplot(color = "navy", fill = "yellow", size = 0.75)
+```
+
+# Interpretation
+This visualization shows the temperature values in Newark airport over the 12-month period of 2013. As one should expect, temperatures increase as the year goes on, reaching a peak in July before descending back down to lower temperatures in the winter. Interestingly, there appear to be some significant outlier values in the data set. For example, there were some observations of temperatures above 75 degrees in April and above 80 degrees in October. 
+
+
+# Barplot
+
+```{r}
+FlightsByAirline <- tapply(nycflights$flight, nycflights$carrier, nrow)
+ggplot(data = nycflights, x = carrier, y = flight) + geom_bar(aes(carrier), fill = "Navy", color = "Yellow", size = 1.5)
+```
+
+# Interpretation
+This graphic shows the number of flights by each airline over the year. Major airlines such as United Airlines (UA) and Delta (DL) are very well represented given their large geographic reach. Although Hawaiian Airlines (HA), Skywest (OO) and Alaska Airlines (AS) are apparently present in the dataset they all have very low to no flights recorded over the year. I am not sure why they would be in the dataset in the first place in that case, but my assumption is that they terminated their contracts for certain terminals in 2013. 
+
+# Open Ended
+
+```{r}
+nycjoined <- merge(nycflights, nyctemps, by = "time_hour")
+str(nycjoined)
+nycjoined$TotDelay <- nycjoined$dep_delay + nycjoined$arr_delay
+ggplot(nycjoined, aes(precip, TotDelay)) + geom_point() + geom_smooth(method = "lm")
+```
+
+# Interpretation
+This graphic doesn't show quite what I expected. I assumed that the total delay (dep_delay + arr_delay) would increase significantly as precipitation increased. However, this doesn't seem to be the case. Although there is a weak correlation according to the line of best fit, the largest delays of multiple hours occurred when there was no precipitation in the airports' regions. This suggests that most delays, and very large delays could be a result of operational issues, mechanical malfunctions and other issues rather than general weather such as rain, wind speed and other factors. 
+
